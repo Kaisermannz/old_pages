@@ -10,21 +10,19 @@ import ProjectCard from "../components/ProjectCard.astro";
             <p>
                 Estudiante de 4to año de Ingeniería Civil en Bioinformática.
                 Entusiasta de los servidores Linux, el hardware y la desconexión
-                digital (siempre con una cámara CCD a mano para capturar en
-                analógico). Configurando entornos desde cero y documentando el
-                proceso.
+                digital. Contruyendo proyectos con arduino y ESP32 (IoT).
             </p>
         </div>
     </section>
 
     <section style="margin-top: 60px;">
-        <h2 class="section-title neon-orange">>> REGISTRO DE ARCHIVOS</h2>
+        <h2 class="section-title neon-orange">>> Proyectos</h2>
 
         <div style="display: grid; gap: 24px;">
             <ProjectCard
                 titulo="SPEEDCUBING PWA"
                 descripcion="Desarrollo de una aplicación web progresiva y cronómetro de precisión para competencias de speedcubing."
-                tags={["Rust", "Astro", "Web Workers"]}
+                tags={["Rust", "HTMX", "Web Workers", ""]}
                 color="orange"
                 icono="⏱️"
             />
@@ -40,9 +38,23 @@ import ProjectCard from "../components/ProjectCard.astro";
             <ProjectCard
                 titulo="NEEDLEMAN-WUNSCH"
                 descripcion="Implementación nativa del algoritmo de alineamiento de secuencias bioinformáticas."
-                tags={["C++", "Bioinformática", "Algoritmos"]}
+                tags={["C++", "Bioinformática", "Algoritmos", "graphviz"]}
                 color="orange"
                 icono="🧬"
+            />
+            <ProjectCard
+                titulo="NAS"
+                descripcion="NAS constuido con un pc antiguo, alojando contenedores Docker."
+                tags={[
+                    "Portainer",
+                    "Komga",
+                    "Navidrome",
+                    "Jdownloader",
+                    "Tailscale",
+                    "Samba",
+                ]}
+                color="orange"
+                icono="☁️ 📁"
             />
         </div>
     </section>

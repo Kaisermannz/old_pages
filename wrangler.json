@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portafolio-retro",
+  "compatibility_date": "2026-06-14",
+  "pages_build_output_dir": "./dist",
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "AQUI_PEGA_EL_ID_QUE_COPIASTE"
+    }
+  ]
+}
