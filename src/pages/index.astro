@@ -1,11 +1,49 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from "../layouts/Layout.astro";
+import ProjectCard from "../components/ProjectCard.astro";
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Inicio">
+    <section>
+        <h2 class="section-title neon-blue">>> SOBRE MÍ</h2>
+        <div class="panel panel-blue">
+            <p>
+                Estudiante de 4to año de Ingeniería Civil en Bioinformática.
+                Entusiasta de los servidores Linux, el hardware y la desconexión
+                digital (siempre con una cámara CCD a mano para capturar en
+                analógico). Configurando entornos desde cero y documentando el
+                proceso.
+            </p>
+        </div>
+    </section>
+
+    <section style="margin-top: 60px;">
+        <h2 class="section-title neon-orange">>> REGISTRO DE ARCHIVOS</h2>
+
+        <div style="display: grid; gap: 24px;">
+            <ProjectCard
+                titulo="SPEEDCUBING PWA"
+                descripcion="Desarrollo de una aplicación web progresiva y cronómetro de precisión para competencias de speedcubing."
+                tags={["Rust", "Astro", "Web Workers"]}
+                color="orange"
+                icono="⏱️"
+            />
+
+            <ProjectCard
+                titulo="THE WARDEN"
+                descripcion="Monitor ambiental y sistema de arranque remoto para infraestructura de Home Lab."
+                tags={["ESP32", "C++", "Telegram Bot API"]}
+                color="blue"
+                icono="⚡"
+            />
+
+            <ProjectCard
+                titulo="NEEDLEMAN-WUNSCH"
+                descripcion="Implementación nativa del algoritmo de alineamiento de secuencias bioinformáticas."
+                tags={["C++", "Bioinformática", "Algoritmos"]}
+                color="orange"
+                icono="🧬"
+            />
+        </div>
+    </section>
 </Layout>

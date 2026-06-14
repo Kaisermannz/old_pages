@@ -1,0 +1,141 @@
+---
+interface Props {
+    titulo: string;
+    descripcion: string;
+    tags: string[];
+    url?: string;
+    color: "orange" | "blue";
+    icono?: string;
+}
+
+const {
+    titulo,
+    descripcion,
+    tags,
+    url = "#",
+    color,
+    icono = "◆",
+} = Astro.props;
+const isExternal = url !== "#";
+---
+
+<article class={`card panel panel-${color}`}>
+    <div class="card-header">
+        <span class="card-icon">{icono}</span>
+        <h3 class={`card-title neon-${color}`}>{titulo}</h3>
+    </div>
+
+    <p class="card-desc">{descripcion}</p>
+
+    <div class="card-tags">
+        {tags.map((tag) => <span class={`tag tag-${color}`}>{tag}</span>)}
+    </div>
+
+    {
+        isExternal && (
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={`card-link neon-${color}`}
+            >
+                VER PROYECTO →
+            </a>
+        )
+    }
+</article>
+
+<style>
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        height: 100%;
+        transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .card.panel-orange:hover {
+        box-shadow:
+            0 0 36px rgba(255, 107, 0, 0.4),
+            inset 0 0 20px rgba(255, 107, 0, 0.06);
+    }
+    .card.panel-blue:hover {
+        box-shadow:
+            0 0 36px rgba(0, 119, 255, 0.4),
+            inset 0 0 20px rgba(0, 119, 255, 0.06);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .card-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+        line-height: 1.5;
+    }
+
+    .card-title {
+        font-family: "Press Start 2P", monospace;
+        font-size: 9px;
+        line-height: 1.8;
+        letter-spacing: 1px;
+    }
+
+    .card-desc {
+        font-family: "VT323", monospace;
+        font-size: 20px;
+        color: #aaaacc;
+        line-height: 1.4;
+        flex: 1;
+    }
+
+    .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .tag {
+        font-family: "Press Start 2P", monospace;
+        font-size: 6px;
+        padding: 4px 8px;
+        border: 1px solid;
+        letter-spacing: 1px;
+    }
+
+    .tag-orange {
+        border-color: rgba(255, 107, 0, 0.5);
+        color: #ff8c00;
+        background: rgba(255, 107, 0, 0.07);
+    }
+
+    .tag-blue {
+        border-color: rgba(0, 119, 255, 0.5);
+        color: #00aaff;
+        background: rgba(0, 119, 255, 0.07);
+    }
+
+    .card-link {
+        font-family: "Press Start 2P", monospace;
+        font-size: 7px;
+        letter-spacing: 2px;
+        margin-top: auto;
+        padding: 8px 0;
+        display: inline-block;
+        transition: letter-spacing 0.2s ease;
+    }
+
+    .card-link:hover {
+        letter-spacing: 5px;
+        text-decoration: none;
+    }
+</style>
