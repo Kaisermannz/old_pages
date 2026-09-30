@@ -20,7 +20,11 @@ const { title = "PORTFOLIO" } = Astro.props;
             href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
             rel="stylesheet"
         />
-        <title>{title}</title>
+        <meta
+            name="description"
+            content="Portafolio retro-terminal de Kaisermann. Bioinformática, Rust, servidores Linux, hardware IoT (ESP32) y Speedcubing."
+        />
+        <title>{title ? `${title} | Kaisermann` : "Kaisermann | Portafolio"}</title>
 
         <style is:global>
             /* ═══════════════════════════════════════
@@ -267,6 +271,38 @@ const { title = "PORTFOLIO" } = Astro.props;
             a:hover {
                 color: var(--orange-b);
                 text-decoration: underline;
+            }
+
+            /* ═══════════════════════════════════════
+         CODE BLOCKS
+      ═══════════════════════════════════════ */
+            pre, code {
+                font-family: "Courier New", Courier, monospace;
+            }
+            pre {
+                background: #040417;
+                border: 1px solid var(--border);
+                border-left: 3px solid var(--orange);
+                padding: 16px;
+                border-radius: 4px;
+                overflow-x: auto;
+                font-size: 15px;
+                line-height: 1.4;
+                color: #d1d5db;
+                margin: 16px 0;
+            }
+            code {
+                background: rgba(0, 119, 255, 0.12);
+                color: var(--blue-b);
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 0.9em;
+            }
+            pre code {
+                background: transparent;
+                padding: 0;
+                color: inherit;
+                font-size: inherit;
             }
 
             /* ═══════════════════════════════════════

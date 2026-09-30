@@ -4,6 +4,7 @@ interface Props {
     descripcion: string;
     tags: string[];
     url?: string;
+    linkText?: string;
     color: "orange" | "blue";
     icono?: string;
 }
@@ -13,10 +14,14 @@ const {
     descripcion,
     tags,
     url = "#",
+    linkText = "VER PROYECTO →",
     color,
     icono = "◆",
 } = Astro.props;
-const isExternal = url !== "#";
+
+const hasLink = url && url !== "#";
+const isExternal = hasLink && url.startsWith("http");
+const filteredTags = tags.filter((t) => typeof t === "string" && t.trim().length > 0);
 ---
 
 <article class={`card panel panel-${color}`}>
@@ -28,18 +33,18 @@ const isExternal = url !== "#";
     <p class="card-desc">{descripcion}</p>
 
     <div class="card-tags">
-        {tags.map((tag) => <span class={`tag tag-${color}`}>{tag}</span>)}
+        {filteredTags.map((tag) => <span class={`tag tag-${color}`}>{tag}</span>)}
     </div>
 
     {
-        isExternal && (
+        hasLink && (
             <a
                 href={url}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
                 class={`card-link neon-${color}`}
             >
-                VER PROYECTO →
+                {linkText}
             </a>
         )
     }

@@ -1,0 +1,478 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const snippetStats = `// Regla oficial WCA: descartar el 5% superior y 5% inferior
+let trim = ((n as f64) * 0.05).ceil() as usize;
+
+if dnf_count > trim {
+    return AverageResult::Dnf;
+}
+
+times.sort_unstable();
+
+// Excluimos los peores y mejores según el corte
+let valid_times = &times[trim..(n - trim)];
+let sum: i64 = valid_times.iter().map(|&t| t as i64).sum();
+let divisor = (n - 2 * trim) as i64;
+
+AverageResult::Ok((sum / divisor) as i32)`;
+
+const snippetSql = `WITH numbered AS (
+    SELECT 
+        id, 
+        event_code, 
+        time_ms, 
+        penalty, 
+        scramble,
+        ROW_NUMBER() OVER (ORDER BY id ASC) as solve_number
+    FROM solves 
+    WHERE event_code = ?1
+)
+SELECT id, event_code, time_ms, penalty, scramble, solve_number
+FROM numbered
+ORDER BY id DESC
+LIMIT ?2`;
+
+const snippetAxum = `/// GET /scramble/:event
+async fn get_scramble_handler(Path(event): Path<String>) -> Result<String, (StatusCode, String)> {
+    // Despacho a hilo de cálculo para operaciones CPU-bound intensivas de twips
+    tokio::task::spawn_blocking(move || generate_wca_scramble(&event))
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))
+}`;
+---
+
+<Layout title="Speedcube Timer PWA - Arquitectura & Detalles">
+    <nav style="padding: 24px 0 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <a href="/" class="back-link neon-blue">
+            ← VOLVER AL PORTAFOLIO
+        </a>
+        <div style="font-family: var(--font-pixel); font-size: 8px; color: var(--muted); letter-spacing: 1px;">
+            PROJECT_ID: SPEEDCUBE_PWA
+        </div>
+    </nav>
+
+    <div class="divider" style="margin: 16px 0 36px 0;"></div>
+
+    <!-- Hero del Proyecto -->
+    <header class="project-hero">
+        <div class="terminal-badge">
+            <span class="badge-dot"></span> RUST 2024 // AXUM // SQLITE (WAL) // HTMX // ALPINE.JS // PWA
+        </div>
+        <h1 class="neon-orange hero-title">
+            SPEEDCUBE TIMER PWA <span class="blink">_</span>
+        </h1>
+        <p class="hero-desc">
+            Cronómetro de alta precisión WCA y Progressive Web App diseñado para la comunidad de Speedcubing.
+            Construido bajo los principios de Clean Architecture en un workspace modular de Rust, persistencia ACID en SQLite y una interfaz reactiva e hipermedia sin la sobrecarga de un SPA tradicional.
+        </p>
+    </header>
+
+    <!-- Ficha Técnica Rápida -->
+    <section style="margin-top: 40px;">
+        <h2 class="section-title neon-blue">>> FICHA TÉCNICA DEL STACK</h2>
+        <div class="spec-grid">
+            <div class="panel panel-blue spec-card">
+                <span class="spec-icon">🦀</span>
+                <div class="spec-title neon-blue">CORE BACKEND</div>
+                <p class="spec-text">Rust 2024 con Axum 0.8 y Tokio. Workspace modular desacoplado (Domain, DB, API).</p>
+            </div>
+            <div class="panel panel-orange spec-card">
+                <span class="spec-icon">🗄️</span>
+                <div class="spec-title neon-orange">PERSISTENCIA ACID</div>
+                <p class="spec-text">SQLite optimizado con Sqlx, WAL mode (Write-Ahead Logging) y Window Functions.</p>
+            </div>
+            <div class="panel panel-blue spec-card">
+                <span class="spec-icon">⚡</span>
+                <div class="spec-title neon-blue">INTERFAZ HIPERMEDIA</div>
+                <p class="spec-text">HTMX para swaps de fragmentos en el servidor y Alpine.js para estados reactivos en el cliente.</p>
+            </div>
+            <div class="panel panel-orange spec-card">
+                <span class="spec-icon">📐</span>
+                <div class="spec-title neon-orange">ESTÁNDAR OFICIAL WCA</div>
+                <p class="spec-text">Generación de scrambles con 'twips' (Uniform Random State) y cálculo Ao5 con corte del 5%.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Motivación y Desafío Técnico -->
+    <section style="margin-top: 50px;">
+        <h2 class="section-title neon-orange">>> 01. EL PROBLEMA TÉCNICO Y MOTIVACIÓN</h2>
+        <div class="panel panel-orange">
+            <p style="margin-bottom: 16px;">
+                En el Speedcubing profesional (resolución a ciegas y a velocidad del Cubo de Rubik), las milésimas de segundo marcan la diferencia. La mayoría de cronómetros web convencionales presentan tres problemas críticos:
+            </p>
+            <ul class="retro-list">
+                <li>
+                    <strong>Desviación del Event Loop (Timer Drift):</strong> El uso descuidado de <code>setInterval</code> en JavaScript genera retrasos e irregularidades cuando el hilo principal de renderizado está saturado.
+                </li>
+                <li>
+                    <strong>Mezclas no oficiales (Scramble non-compliance):</strong> Muchos cronómetros aplican secuencias aleatorias simples de movimientos en vez del algoritmo de <em>Uniform Random State</em> exigido por el reglamento oficial de la WCA (World Cube Association).
+                </li>
+                <li>
+                    <strong>Sobrediseño en Frontend (SPA Bloat):</strong> Depender de frameworks de cientos de kilobytes (React, Next.js, etc.) que aumentan el tiempo de inicio (TTI) y dificultan el uso sin conexión en torneos sin cobertura.
+                </li>
+            </ul>
+            <p style="margin-top: 16px; color: var(--green);">
+                ✔ <strong>La solución:</strong> Un backend nativo ultrarrápido en Rust compilado a binario estático, SQLite en modo WAL para escritura inmediata de cada solve, y un frontend ultraligero guiado por hipermedios (HTMX) y PWA instalable con Service Worker para funcionamiento 100% offline.
+            </p>
+        </div>
+    </section>
+
+    <!-- Arquitectura de Crates -->
+    <section style="margin-top: 50px;">
+        <h2 class="section-title neon-blue">>> 02. ARQUITECTURA LIMPIA (RUST WORKSPACE)</h2>
+        <div class="panel panel-blue">
+            <p style="margin-bottom: 20px;">
+                El proyecto está organizado como un <em>Cargo Workspace</em> desacoplado en tres capas siguiendo los patrones de Clean Architecture y Domain-Driven Design (DDD):
+            </p>
+
+            <div class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│                      NAVEGADOR / PWA                        │
+│      HTMX (DOM Swaps) + Alpine.js (State) + Service Worker  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTP / JSON / HTML Fragments
+┌──────────────────────────────▼──────────────────────────────┐
+│  crates/speedcube_api (Delivery Layer)                      │
+│  - Axum 0.8 Web Framework + Tokio Async Engine              │
+│  - Offload de scrambles intensivos con spawn_blocking       │
+│  - Generación sanitizada de fragmentos HTML para HTMX       │
+└──────────────┬──────────────────────────────┬───────────────┘
+               │                              │
+┌──────────────▼──────────────┐┌──────────────▼───────────────┐
+│ crates/speedcube_db         ││ crates/speedcube_domain      │
+│ (Persistence Layer)         ││ (Core Domain & Rules)        │
+│ - Sqlx + SQLite Connection  ││ - Modelos: Solve, Penalty    │
+│ - PRAGMA journal_mode = WAL ││ - Scrambler WCA via 'twips'  │
+│ - Window Functions (CTE)    ││ - Cálculo de Ao5 / AoN (5%)  │
+│ - Índices (event_code, id)  ││ - Cero dependencias externas │
+└─────────────────────────────┘└──────────────────────────────┘
+            </div>
+
+            <div style="display: grid; gap: 20px; margin-top: 24px;">
+                <div class="crate-box">
+                    <h3 class="neon-orange" style="font-family: var(--font-pixel); font-size: 11px;">1. crates/speedcube_domain</h3>
+                    <p>
+                        El núcleo puro del sistema, totalmente agnóstico a la base de datos o el transporte web.
+                        Implementa los modelos del dominio (<code>Solve</code>, enum <code>Penalty</code>: <em>None</em>, <em>+2</em>, <em>DNF</em>), la lógica de generación de estados aleatorios oficiales de la WCA para 2x2, 3x3 y 4x4 usando la librería <code>twips</code>, y el algoritmo de cálculo de estadísticas (Average of N y Average of 5) con la regla de corte oficial del 5% superior e inferior redondeado hacia arriba.
+                    </p>
+                </div>
+
+                <div class="crate-box">
+                    <h3 class="neon-blue" style="font-family: var(--font-pixel); font-size: 11px;">2. crates/speedcube_db</h3>
+                    <p>
+                        Encapsula la persistencia mediante <code>sqlx</code> sobre SQLite. Emplea un pool de conexiones configurado con <code>journal_mode = WAL</code> (permite lecturas y escrituras concurrentes sin bloqueos de archivo) y <code>synchronous = NORMAL</code>.
+                        Resuelve la numeración exacta e inmutable de los solves mediante una Common Table Expression (CTE) con la Window Function:
+                        <code>ROW_NUMBER() OVER (ORDER BY id ASC) as solve_number</code>, asegurando que la numeración no sufra saltos al paginar con <code>LIMIT</code>.
+                    </p>
+                </div>
+
+                <div class="crate-box">
+                    <h3 class="neon-yellow" style="font-family: var(--font-pixel); font-size: 11px;">3. crates/speedcube_api</h3>
+                    <p>
+                        Punto de entrada de la aplicación con <code>axum</code>. Implementa endpoints REST y endpoints de hipermedia que devuelven fragmentos HTML optimizados para HTMX.
+                        Para proteger el reactor de hilos asíncronos de Tokio ante la complejidad combinatoria del generador de mezclas de <code>twips</code>, delega el cálculo a hilos bloqueantes dedicados mediante <code>tokio::task::spawn_blocking</code>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Código Destacado -->
+    <section style="margin-top: 50px;">
+        <h2 class="section-title neon-orange">>> 03. FRAGMENTOS CLAVE DE IMPLEMENTACIÓN</h2>
+
+        <!-- Snippet 1 -->
+        <div class="panel panel-orange" style="margin-bottom: 24px;">
+            <div class="code-title">
+                <span class="file-name">crates/speedcube_domain/src/stats.rs</span>
+                <span class="file-lang">RUST</span>
+            </div>
+            <p style="font-size: 18px; color: var(--muted); margin-bottom: 12px;">
+                Cálculo de Average of N (AoN) con descarte del 5% WCA y gestión de penalizaciones DNF y +2:
+            </p>
+            <pre><code>{snippetStats}</code></pre>
+        </div>
+
+        <!-- Snippet 2 -->
+        <div class="panel panel-blue" style="margin-bottom: 24px;">
+            <div class="code-title">
+                <span class="file-name">crates/speedcube_db/src/lib.rs</span>
+                <span class="file-lang">SQL & RUST</span>
+            </div>
+            <p style="font-size: 18px; color: var(--muted); margin-bottom: 12px;">
+                Consulta optimizada con Window Functions para numeración secuencial global en SQLite:
+            </p>
+            <pre><code>{snippetSql}</code></pre>
+        </div>
+
+        <!-- Snippet 3 -->
+        <div class="panel panel-orange">
+            <div class="code-title">
+                <span class="file-name">crates/speedcube_api/src/main.rs</span>
+                <span class="file-lang">AXUM + TOKIO</span>
+            </div>
+            <p style="font-size: 18px; color: var(--muted); margin-bottom: 12px;">
+                Generación asíncrona de mezclas sin bloquear el event loop de Tokio:
+            </p>
+            <pre><code>{snippetAxum}</code></pre>
+        </div>
+    </section>
+
+    <!-- Auditoría y Mejoras Técnicas -->
+    <section style="margin-top: 50px;">
+        <h2 class="section-title neon-blue">>> 04. AUDITORÍA TÉCNICA Y LECCIONES APRENDIDAS</h2>
+        <div class="panel panel-blue">
+            <p style="margin-bottom: 16px;">
+                Durante la evolución del proyecto se llevó a cabo una auditoría integral de arquitectura que identificó y resolvió los siguientes puntos clave:
+            </p>
+
+            <div style="display: grid; gap: 16px;">
+                <div class="audit-item">
+                    <span class="audit-badge neon-green">[RESUELTO]</span>
+                    <div>
+                        <strong style="color: var(--text);">Fallo en la numeración del Solve #50:</strong>
+                        <p style="font-size: 19px; color: var(--muted);">
+                            Al consultar 50 filas con <code>LIMIT 50</code>, numerar en base a <code>solves.len() - i</code> provocaba que cualquier solve a partir del #51 mantuviera la fila superior en "#50". Se corrigió delegando la numeración al motor SQL mediante <code>ROW_NUMBER() OVER (ORDER BY id ASC)</code>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <span class="audit-badge neon-green">[RESUELTO]</span>
+                    <div>
+                        <strong style="color: var(--text);">Bloqueo del Event Loop por CPU-bound:</strong>
+                        <p style="font-size: 19px; color: var(--muted);">
+                            La exploración combinatoria del estado del cubo en <code>twips</code> se aisló con <code>tokio::task::spawn_blocking</code>, asegurando que el servidor pueda responder peticiones concurrentes a milisegundos de latencia.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <span class="audit-badge neon-green">[RESUELTO]</span>
+                    <div>
+                        <strong style="color: var(--text);">Sanitización estricta contra XSS:</strong>
+                        <p style="font-size: 19px; color: var(--muted);">
+                            En la generación de fragmentos HTML para HTMX se implementó una función <code>escape_html</code> completa que sustituye caracteres como <code>&lt;</code>, <code>&gt;</code>, <code>"</code> y <code>&#x27;</code>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="audit-item">
+                    <span class="audit-badge neon-blue">[INFRAESTRUCTURA]</span>
+                    <div>
+                        <strong style="color: var(--text);">Persistencia desacoplada con Docker:</strong>
+                        <p style="font-size: 19px; color: var(--muted);">
+                            Uso de <code>DATABASE_URL</code> configurable por variable de entorno para montar volúmenes persistentes en <code>/app/data/speedcube_data.db</code> bajo contenedores Alpine/Debian ultraligeros.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer de Navegación -->
+    <div class="divider" style="margin: 60px 0 30px 0;"></div>
+
+    <footer style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding-bottom: 20px;">
+        <a href="/" class="back-button neon-orange">
+            ← VOLVER AL PORTAFOLIO PRINCIPAL
+        </a>
+        <div style="font-family: var(--font-pixel); font-size: 8px; color: var(--muted);">
+            SYS://KAISERMANN.SYS // SPEEDCUBE PWA
+        </div>
+    </footer>
+</Layout>
+
+<style>
+    .project-hero {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .terminal-badge {
+        font-family: var(--font-pixel);
+        font-size: 8px;
+        color: var(--orange-b);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 107, 0, 0.08);
+        border: 1px solid rgba(255, 107, 0, 0.3);
+        padding: 6px 12px;
+        width: fit-content;
+        letter-spacing: 1px;
+    }
+
+    .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+        display: inline-block;
+    }
+
+    .hero-title {
+        font-family: var(--font-pixel);
+        font-size: 24px;
+        line-height: 1.4;
+        margin: 0;
+        letter-spacing: 2px;
+    }
+
+    .hero-desc {
+        color: #ccd0ee;
+        font-size: 22px;
+        line-height: 1.45;
+        max-width: 850px;
+    }
+
+    .spec-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .spec-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+    }
+
+    .spec-icon {
+        font-size: 26px;
+        line-height: 1;
+    }
+
+    .spec-title {
+        font-family: var(--font-pixel);
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    .spec-text {
+        font-size: 18px;
+        line-height: 1.35;
+        color: var(--muted);
+        margin: 0;
+    }
+
+    .retro-list {
+        list-style: none;
+        padding-left: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .retro-list li {
+        position: relative;
+        padding-left: 24px;
+        line-height: 1.4;
+    }
+
+    .retro-list li::before {
+        content: "►";
+        position: absolute;
+        left: 0;
+        color: var(--orange-b);
+        font-size: 14px;
+    }
+
+    .architecture-diagram {
+        background: #030312;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        padding: 16px;
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.3;
+        color: #79c0ff;
+        overflow-x: auto;
+        white-space: pre;
+    }
+
+    .crate-box {
+        background: rgba(13, 13, 42, 0.7);
+        border: 1px solid var(--border);
+        padding: 16px;
+        border-radius: 2px;
+    }
+
+    .crate-box p {
+        font-size: 19px;
+        line-height: 1.4;
+        color: #b0b4d6;
+        margin-top: 8px;
+    }
+
+    .code-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+        font-family: var(--font-pixel);
+        font-size: 9px;
+    }
+
+    .file-name {
+        color: var(--orange-b);
+    }
+
+    .file-lang {
+        color: var(--muted);
+    }
+
+    .audit-item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .audit-badge {
+        font-family: var(--font-pixel);
+        font-size: 8px;
+        flex-shrink: 0;
+        margin-top: 4px;
+    }
+
+    .back-link, .back-button {
+        font-family: var(--font-pixel);
+        font-size: 9px;
+        letter-spacing: 2px;
+        display: inline-block;
+        padding: 8px 14px;
+        border: 1px solid currentColor;
+        transition: all 0.2s ease;
+    }
+
+    .back-link:hover, .back-button:hover {
+        background: rgba(255, 107, 0, 0.15);
+        text-decoration: none;
+        transform: translateX(-4px);
+    }
+
+    @media (max-width: 640px) {
+        .hero-title {
+            font-size: 18px;
+        }
+        .hero-desc {
+            font-size: 19px;
+        }
+        .architecture-diagram {
+            font-size: 10px;
+        }
+        .terminal-badge {
+            font-size: 7px;
+        }
+    }
+</style>

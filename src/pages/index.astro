@@ -4,13 +4,27 @@ import ProjectCard from "../components/ProjectCard.astro";
 ---
 
 <Layout title="Inicio">
+    <header style="padding: 30px 0 10px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-family: var(--font-pixel); font-size: 9px; color: var(--muted); letter-spacing: 2px;">
+            SYS://KAISERMANN.SYS [ONLINE]
+        </div>
+        <h1 class="neon-orange" style="font-family: var(--font-pixel); font-size: 22px; line-height: 1.4; margin: 0;">
+            KAISERMANN <span class="blink">_</span>
+        </h1>
+        <p style="color: var(--muted); font-size: 20px; margin: 0;">
+            Bioinformática | Rust | Sistemas Linux | Hardware & IoT
+        </p>
+    </header>
+
+    <div class="divider" style="margin: 24px 0 40px 0;"></div>
+
     <section>
         <h2 class="section-title neon-blue">>> SOBRE MÍ</h2>
         <div class="panel panel-blue">
             <p>
                 Estudiante de 4to año de Ingeniería Civil en Bioinformática.
                 Entusiasta de los servidores Linux, el hardware y la desconexión
-                digital. Contruyendo proyectos con arduino y ESP32 (IoT).
+                digital. Construyendo proyectos con Arduino y ESP32 (IoT).
             </p>
         </div>
     </section>
@@ -21,8 +35,10 @@ import ProjectCard from "../components/ProjectCard.astro";
         <div style="display: grid; gap: 24px;">
             <ProjectCard
                 titulo="SPEEDCUBING PWA"
-                descripcion="Desarrollo de una aplicación web progresiva y cronómetro de precisión para competencias de speedcubing."
-                tags={["Rust", "HTMX", "Web Workers", ""]}
+                descripcion="Desarrollo de una aplicación web progresiva y cronómetro de precisión para competencias de speedcubing. Arquitectura limpia en Rust, SQLite, HTMX y PWA offline."
+                tags={["Rust", "Axum", "SQLite", "HTMX", "Alpine.js", "PWA"]}
+                url="/timer"
+                linkText="VER CÓMO ESTÁ HECHO →"
                 color="orange"
                 icono="⏱️"
             />
@@ -44,7 +60,7 @@ import ProjectCard from "../components/ProjectCard.astro";
             />
             <ProjectCard
                 titulo="NAS"
-                descripcion="NAS constuido con un pc antiguo, alojando contenedores Docker."
+                descripcion="NAS construido con un PC antiguo, alojando contenedores Docker."
                 tags={[
                     "Portainer",
                     "Komga",
